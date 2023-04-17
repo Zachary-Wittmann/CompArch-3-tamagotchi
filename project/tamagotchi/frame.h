@@ -72,9 +72,3 @@ restIcon(int color){
   drawString5x7(72, 137, "Z", color, COLOR_RED);
 }
 
-int
-statusIcon(int color){
-  drawRectOutline(97, 135, 21, 21, color);
-  drawRectOutline(98, 134, 21, 21, color);
-  drawString5x7(106, 143, "S", color, COLOR_RED);
-}

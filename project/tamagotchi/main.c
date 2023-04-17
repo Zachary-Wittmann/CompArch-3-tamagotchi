@@ -50,7 +50,7 @@ switch_interrupt_handler()
 
   // Button 1 pressed
   if (!(P2IN & SW1)){
-    if (selected < 5){
+    if (selected < 4){
       selected ++;
     }
     
@@ -101,7 +101,6 @@ draw_frame(){
   restIcon(COLOR_BLACK);
 
   drawRectOutline(85, 130, 43, 30, COLOR_BLACK); // Bottom-Right Box
-  statusIcon(COLOR_BLACK);
 }
 
 void
@@ -126,33 +125,30 @@ main()
       update_screen();
     }
     or_sr(0x10);
-  }  
+  }
 }
 
 void
 update_screen()
 { 
-  if (selected == 1)
+  if (selected == 1){
     foodIcon(COLOR_WHITE);
-  
-  else if (selected == 2)
-    danceIcon(COLOR_WHITE);
-
-  else if (selected == 3)
-    cleanIcon(COLOR_WHITE);
-
-  else if (selected == 4)
-    restIcon(COLOR_WHITE);
-
-  else if (selected == 5)
-    statusIcon(COLOR_WHITE);
-  
-  else{
-    danceIcon(COLOR_BLACK);
-    foodIcon(COLOR_BLACK);
-    cleanIcon(COLOR_BLACK);
     restIcon(COLOR_BLACK);
-    statusIcon(COLOR_BLACK);
+  }
+  
+  else if (selected == 2){
+    danceIcon(COLOR_WHITE);
+    foodIcon(COLOR_BLACK);
+  }
+    
+  else if (selected == 3){
+    cleanIcon(COLOR_WHITE);
+    danceIcon(COLOR_BLACK);
+  }
+
+  else if (selected == 4){
+    restIcon(COLOR_WHITE);
+    cleanIcon(COLOR_BLACK);
   }
 }
 
