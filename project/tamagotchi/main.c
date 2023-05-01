@@ -3,6 +3,8 @@
 #include "lcdutils.h"
 #include "lcddraw.h"
 #include "frame.h"
+#include "buzzer.h"
+#include "music.h"
 
 #define LED BIT6
 
@@ -49,19 +51,40 @@ void switch_interrupt_handler()
   char p2val = switch_update_interrupt_sense();
   switches = ~p2val & SWITCHES;
 
-  // Button 1 pressed
-  if ((!(P2IN & SW1)) & button_state == 0){
-    if (selected < 4){
-      selected ++;
-    }
+  // Button 1 pressed (muted)
+  if ((!(P2IN & SW1)) & muted == 1){
+    if (button_state == 0){
+      buzzer_set_period(5102);
+      if (selected < 4){
+	selected ++;
+      }
     
-    else
-      selected = 1;
+      else{
+	buzzer_set_period(5102);
+	selected = 1;
+      }
+    }
+  
+    else if (button_state != 0)
+      ;
   }
   
-  else if ((!(P2IN & SW1)) & button_state != 0)
-    ;
-  
+  // Button 1 pressed (!muted)
+  else if ((!(P2IN & SW1)) & muted == 0){
+    if (button_state == 0){
+      if (selected < 4){
+	selected ++;
+      }
+      
+      else
+	selected = 1;
+    }
+    
+    else if (button_state != 0)
+      ;
+  }
+
+
   // Button 2 pressed
   else if ((!(P2IN & SW2)) & button_state == 0){
     fillRectangle(0, 30, 128, 100, COLOR_WHITE);
@@ -100,20 +123,31 @@ void switch_interrupt_handler()
   else if ((!(P2IN & SW3)) & button_state == 1){
     executed = 0;
     button_state = 0;
+    buzzer_set_period(0);
   }
 
   // Button 4 pressed
   else if (!(P2IN & SW4)){
     if(!muted)
       muted = 1;
-    else
-      muted = 0;    
+    else{
+      buzzer_set_period(0);
+      muted = 0;
+    }
   }
   
   // Button Release
   else{
+    // Button 1 (unmuted) released
+    if ((P2IN & SW1) & button_state == 0 & muted != 0)
+      buzzer_set_period(0);
 
-    if(button_state == 1)
+    // Button 3 (unmuted) released
+    else if ((P2IN & SW3) & button_state == 0 & muted != 0)
+      buzzer_set_period(0);
+
+    
+    else if(button_state == 1)
       ;
 
     else
@@ -269,8 +303,40 @@ screen_update_action()
 short redrawScreen = 1;
 
 void wdt_c_handler()
-{
+{  
   static int secCount = 0;
+  static int songCount = 0;
+  static int danceSecCount = 0;
+
+
+  danceSecCount ++;
+  if (danceSecCount >= 35){
+    
+    // Dance Animations
+    if (executed == 2 & muted == 1 & songCount < ARRLEN(danceSong)){
+      songCount ++;
+      if (dn_status == 0){
+	dn_status = 1;
+	buzzer_set_period(danceSong[songCount - 1]);
+      }
+      else{
+	dn_status = 0;
+	buzzer_set_period(danceSong[songCount - 1]);	
+      }
+    }
+
+    else if (executed == 2 & muted == 1 & songCount >= ARRLEN(danceSong))
+      songCount = 0;
+      
+    else if (executed == 2 & muted == 0){
+      if (dn_status == 0)
+	dn_status = 1;
+      else
+        dn_status = 0;
+    }
+    danceSecCount = 0;
+  }
+
   
   secCount ++;
   if (secCount >= 200){
@@ -282,21 +348,28 @@ void wdt_c_handler()
       else
 	controlPos[0] = newCol;
     }
-    
-    {
+
+    // Feed Animations (unmuted)
+    if (executed == 1 & muted == 1){
+      if (fd_status == 0){
+	fd_status = 1;
+	buzzer_set_period(2500);
+      }
+      else{
+	fd_status = 0;
+	buzzer_set_period(0);
+      }
+    }
+
+    // Feed Animations (muted)
+    else if (executed == 1 & muted == 0){
       if (fd_status == 0)
 	fd_status = 1;
       else
 	fd_status = 0;
     }
-
-    {
-      if (dn_status == 0)
-	dn_status = 1;
-      else
-	dn_status = 0;
-    }
-
+    
+    //Clean Animations
     {
       if (cl_status == 0)
 	cl_status = 1;
@@ -344,6 +417,7 @@ void main()
   switch_init();
 
   enableWDTInterrupts();
+  buzzer_init();
   or_sr(0x8);
 
   clearScreen(COLOR_WHITE);
@@ -366,6 +440,15 @@ update_screen()
   
   screen_update_buttons();
   screen_update_action();
+}
+
+
+void
+delay(int ms){
+  while(ms > 0){
+    __delay_cycles(2000);
+    ms --;
+  }
 }
 
 void

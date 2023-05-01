@@ -1,4 +1,4 @@
-all: libLcd.a main.elf
+all: libLcd.a main.elf buzzer.elf
 
 CPU             = msp430g2553
 CFLAGS          = -mmcu=${CPU} -Os -I../h 
@@ -22,8 +22,10 @@ install: libLcd.a
 clean:
 	rm -f libLcd.a *.o *.elf
 
-main.elf: ${COMMON_OBJECTS} main.o libLcd.a wdt_handler.o
+main.elf: ${COMMON_OBJECTS} buzzer.o main.o libLcd.a wdt_handler.o
 	${CC} ${CFLAGS} ${LDFLAGS} -o $@ $^ -lTimer -lLcd
+
+buzzer.c: buzzer.h
 
 load: main.elf
 	msp430loader.sh $^
